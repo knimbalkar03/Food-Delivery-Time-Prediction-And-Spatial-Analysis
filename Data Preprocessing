@@ -1,1 +1,95 @@
+#import libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import scipy.stats as stats
+import statistics
+from geopy.distance import geodesic
+
+from sklearn.model_selection import train_test_split,cross_val_score, GridSearchCV
+from sklearn.preprocessing import LabelEncoder,StandardScaler 
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+import xgboost as xgb
+from sklearn.metrics import mean_squared_error, r2_score,mean_absolute_error
+import warnings
+warnings.filterwarnings('ignore')
+
+
+#Loaading the dataset
+
+df_train = pd.read_csv('train.csv')
+df_train.head()
+df_train.columns  
+print("Train Dataset :", df_train.shape)
+df_train.info()
+
+#Check statistical values for fields with numerical datatype
+df_train.describe().T
+
+#Check statistical values for fields with other than numerical datatype
+df_train.describe(exclude=np.number).T
+#Explore each column
+for column in df_train.columns:
+    print(column)
+    print(df_train[column].value_counts())
+    print("------------------------------------")
+
+#Update Column Names
+def update_column_name(df):
+    #Renaming Weatherconditions column
+    df.rename(columns={'Weatherconditions': 'Weather_conditions'},inplace=True)
+    
+update_column_name(df_train)
+print(df_train.columns)
+
+#Extract relevant values from column
+def extract_column_value(df):
+    #Extract time and convert to int
+    df['Time_taken(min)'] = df['Time_taken(min)'].apply(lambda x: int(x.split(' ')[1].strip()))
+    #Extract Weather conditions
+    df['Weather_conditions'] = df['Weather_conditions'].apply(lambda x: x.split(' ')[1].strip())
+    #Extract city code from Delivery person ID
+    df['City_code']=df['Delivery_person_ID'].str.split("RES", expand=True)[0]
+    
+extract_column_value(df_train)
+df_train[['Time_taken(min)','Weather_conditions','City_code']].head()
+
+
+#Drop Columns which won't be use for building model
+def drop_columns(df):
+    df.drop(['ID','Delivery_person_ID'],axis=1,inplace=True)
+    
+print("Before No. of columns: ",df_train.shape[1])
+drop_columns(df_train)
+print("After No. of columns: ",df_train.shape[1])
+
+
+#Check for Duplicate Values
+if (len(df_train[df_train.duplicated()])>0):
+    print("There are Duplicate values present")
+else:
+    print("There is no duplicate value present")
+
+
+#Update datatypes
+def update_datatype(df):
+    df['Delivery_person_Age'] = df['Delivery_person_Age'].astype('float64')
+    df['Delivery_person_Ratings'] = df['Delivery_person_Ratings'].astype('float64')
+    df['multiple_deliveries'] = df['multiple_deliveries'].astype('float64')
+    df['Order_Date']=pd.to_datetime(df['Order_Date'],format="%d-%m-%Y")
+    
+update_datatype(df_train)
+
+#Convert String 'NaN' to np.nan
+def convert_nan(df):
+    df.replace('NaN', float(np.nan), regex=True,inplace=True)
+
+convert_nan(df_train)
+
+#Check null values
+df_train.isnull().sum().sort_values(ascending=False)
+
 
